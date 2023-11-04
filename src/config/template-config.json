@@ -1,0 +1,11 @@
+{
+    "bots": [
+        {
+            "name": "First Bot",
+            "verifyToken": "",
+            "encryptKey": "",
+            "remoteAddress": ""
+        }
+    ],
+    "port": 10086
+}
