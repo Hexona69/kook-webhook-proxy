@@ -1,7 +1,9 @@
 {
     "bots": [
         {
-            "name": "First Bot",
+            "enable": false,
+            "proxyEncrypted": true,
+            "name": "bot",
             "verifyToken": "",
             "encryptKey": "",
             "remoteAddress": ""

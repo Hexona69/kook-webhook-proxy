@@ -84,7 +84,8 @@ app.get("/", (req, res) => {
 
 app.post("/", (req, res) => {
     const body = req.body;
-    if (body && body.encrypt) {
+    let encrypt;
+    if (body && (encrypt = body.encrypt)) {
         const ret = bots.map((bot) => {
             try {
                 const base64Content = body.encrypt;
@@ -109,7 +110,10 @@ app.post("/", (req, res) => {
                 res.send({
                     challenge: event.d.challenge,
                 });
-            } else sendBodyToRemote(bot.remoteAddress, event);
+            } else {
+                if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
+                else sendBodyToRemote(bot.remoteAddress, body);
+            }
         }
     } else if (body && body.d) {
         const bot = bots.find((v) => {
@@ -142,8 +146,8 @@ function handleBody(
     bot: ArrayElement<typeof bots>,
     body: any
 ) {
-    let event = body;
-    if (body.encrypt) {
+    let event = body, encrypt;
+    if (encrypt = body.encrypt) {
         try {
             const base64Content = body.encrypt;
             const base64Decode = Buffer.from(base64Content, "base64").toString(
@@ -165,7 +169,8 @@ function handleBody(
         if (isChallengeEvent(event)) {
             return event.d.challenge;
         } else {
-            sendBodyToRemote(bot.remoteAddress, body);
+            if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
+            else sendBodyToRemote(bot.remoteAddress, body);
             return undefined;
         }
     } else {
