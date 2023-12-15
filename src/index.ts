@@ -15,7 +15,7 @@ const app = express();
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
-    logger.debug(`${req.method} ${req.path} ${req.body.length > 200 ? req.body.substring(0, 200) + "..." : req.body}`);
+    logger.info(`${req.method} ${req.path} ${JSON.stringify(req.body).length > 200 ? JSON.stringify(req.body).substring(0, 200) + "..." : JSON.stringify(req.body)}`);
     next();
 });
 
