@@ -14,6 +14,11 @@ dotenvExpand.expand(dotenv.config());
 const app = express();
 app.use(bodyParser.json());
 
+app.use((req, res, next) => {
+    logger.debug(`${req.method} ${req.path} ${req.body.length > 200 ? req.body.substring(0, 200) + "..." : req.body}`);
+    next();
+});
+
 function isChallengeEvent(
     event: WebHook.Events
 ): event is WebHook.ChallengeEvent {
@@ -51,6 +56,20 @@ switch (process.env.ERROR_LEVEL?.toLowerCase()) {
     default:
         BUNYAN_ERROR_LEVEL = Logger.WARN;
 }
+
+const logger = new Logger({
+    name: "kook-proxy",
+    streams: [
+        {
+            stream: process.stdout,
+            level: BUNYAN_LOG_LEVEL,
+        },
+        {
+            stream: process.stderr,
+            level: BUNYAN_ERROR_LEVEL,
+        },
+    ],
+})
 
 const bots = config.bots.filter(v => v.enable).map(v => {
     return {
