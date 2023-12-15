@@ -15,7 +15,7 @@ const app = express();
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
-    logger.info(`${req.method} ${req.path} ${JSON.stringify(req.body).length > 200 ? JSON.stringify(req.body).substring(0, 200) + "..." : JSON.stringify(req.body)}`);
+    logger.info(`${req.method} ${req.path} ${JSON.stringify(req.body).length > 200 ? JSON.stringify(req.body).substring(0, 500) + "..." : JSON.stringify(req.body)}`);
     next();
 });
 
@@ -102,6 +102,7 @@ app.get("/", (req, res) => {
 })
 
 app.post("/", (req, res) => {
+    res.send();
     const body = req.body;
     let encrypt;
     if (body && (encrypt = body.encrypt)) {
@@ -152,6 +153,7 @@ app.post("/", (req, res) => {
 
 for (const bot of bots) {
     app.post(`/${bot.name}`, (req, res) => {
+        res.send();
         const ret = handleBody(bot, req.body);
         if (ret) {
             res.send({
@@ -189,7 +191,7 @@ function handleBody(
             return event.d.challenge;
         } else {
             if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
-            else sendBodyToRemote(bot.remoteAddress, body);
+            else sendBodyToRemote(bot.remoteAddress, event);
             return undefined;
         }
     } else {
