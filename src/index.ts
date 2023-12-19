@@ -213,5 +213,6 @@ function saveEvent(bot: ArrayElement<typeof bots>, event: any) {
     fs.mkdirSync('./config/event', { recursive: true });
     fs.writeFile(`./config/event/${bot.name}/${Date.now()}.json`, JSON.stringify(event), (e) => {
         bot.logger.error(`error while saving event for ${bot.name}`)
+        bot.logger.error(e);
     });
 }
