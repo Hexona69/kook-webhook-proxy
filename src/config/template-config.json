@@ -6,7 +6,8 @@
             "name": "bot",
             "verifyToken": "",
             "encryptKey": "",
-            "remoteAddress": ""
+            "remoteAddress": "",
+            "saveEvent": false
         }
     ],
     "port": 10086

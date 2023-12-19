@@ -3,4 +3,5 @@ package-lock.json
 
 
 src/config/*.*
+src/config/**
 !src/config/template-config.json

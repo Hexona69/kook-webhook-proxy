@@ -192,6 +192,7 @@ function handleBody(
         } else {
             if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
             else sendBodyToRemote(bot.remoteAddress, event);
+            if (bot.saveEvent) saveEvent(bot, event);
             return undefined;
         }
     } else {
@@ -208,3 +209,10 @@ function sendBodyToRemote(url: string, data: any) {
 app.listen(config.port, () => {
     console.log(`Starts listening on ${config.port}`);
 });
+
+import fs from 'fs';
+function saveEvent(bot: ArrayElement<typeof bots>, event: any) {
+    fs.writeFile(`./config/event/${bot.name}/${Date.now()}.json`, JSON.stringify(event), (e) => {
+        bot.logger.error(`error while saving event for ${bot.name}`)
+    });
+}
