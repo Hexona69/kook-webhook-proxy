@@ -102,7 +102,6 @@ app.get("/", (req, res) => {
 })
 
 app.post("/", (req, res) => {
-    res.send();
     const body = req.body;
     let encrypt;
     if (body && (encrypt = body.encrypt)) {
@@ -153,7 +152,6 @@ app.post("/", (req, res) => {
 
 for (const bot of bots) {
     app.post(`/${bot.name}`, (req, res) => {
-        res.send();
         const ret = handleBody(bot, req.body);
         if (ret) {
             res.send({
