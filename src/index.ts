@@ -210,9 +210,11 @@ app.listen(config.port, () => {
 
 import fs from 'fs';
 function saveEvent(bot: ArrayElement<typeof bots>, event: any) {
-    fs.mkdirSync(`./config/event/${bot.name}`, { recursive: true });
-    fs.writeFile(`./config/event/${bot.name}/${Date.now()}.json`, JSON.stringify(event), (e) => {
+    try {
+        fs.mkdirSync(`./config/event/${bot.name}`, { recursive: true });
+        fs.writeFileSync(`./config/event/${bot.name}/${Date.now()}.json`, JSON.stringify(event));
+    } catch (e) {
         bot.logger.error(`error while saving event for ${bot.name}`)
         bot.logger.error(e);
-    });
+    }
 }
