@@ -14,10 +14,10 @@ dotenvExpand.expand(dotenv.config());
 const app = express();
 app.use(bodyParser.json());
 
-app.use((req, res, next) => {
-    logger.info(`${req.method} ${req.path} ${JSON.stringify(req.body).length > 200 ? JSON.stringify(req.body).substring(0, 500) + "..." : JSON.stringify(req.body)}`);
-    next();
-});
+// app.use((req, res, next) => {
+//     logger.info(`${req.method} ${req.path} ${JSON.stringify(req.body).length > 200 ? JSON.stringify(req.body).substring(0, 500) + "..." : JSON.stringify(req.body)}`);
+//     next();
+// });
 
 function isChallengeEvent(
     event: WebHook.Events
@@ -69,60 +69,71 @@ const logger = new Logger({
             level: BUNYAN_ERROR_LEVEL,
         },
     ],
-})
+});
 
-const bots = config.bots.filter(v => v.enable).map(v => {
-    return {
-        ...v,
-        logger: new Logger({
-            name: `${["kook-proxy", v.name].join(".")}`,
-            streams: [
-                {
-                    stream: process.stdout,
-                    level: BUNYAN_LOG_LEVEL,
-                },
-                {
-                    stream: process.stderr,
-                    level: BUNYAN_ERROR_LEVEL,
-                },
-            ],
-        })
-    }
-})
+const bots = config.bots
+    .filter((v) => v.enable)
+    .map((v) => {
+        return {
+            ...v,
+            logger: new Logger({
+                name: `${["kook-proxy", v.name].join(".")}`,
+                streams: [
+                    {
+                        stream: process.stdout,
+                        level: BUNYAN_LOG_LEVEL,
+                    },
+                    {
+                        stream: process.stderr,
+                        level: BUNYAN_ERROR_LEVEL,
+                    },
+                ],
+            }),
+        };
+    });
 
 app.get("/", (req, res) => {
     res.send({
         botCount: bots.length,
-        detail: bots.map((bot => {
+        detail: bots.map((bot) => {
             return {
-                name: bot.name
-            }
-        }))
-    })
-})
+                name: bot.name,
+            };
+        }),
+    });
+});
 
 app.post("/", (req, res) => {
     const body = req.body;
     let encrypt;
     if (body && (encrypt = body.encrypt)) {
-        const ret = bots.map((bot) => {
-            try {
-                const base64Content = body.encrypt;
-                const base64Decode = Buffer.from(base64Content, "base64").toString(
-                    "utf8"
-                );
-                const iv = base64Decode.substring(0, 16);
-                const encrypt = base64Decode.substring(16);
+        const ret = bots
+            .map((bot) => {
+                try {
+                    const base64Content = body.encrypt;
+                    const base64Decode = Buffer.from(
+                        base64Content,
+                        "base64"
+                    ).toString("utf8");
+                    const iv = base64Decode.substring(0, 16);
+                    const encrypt = base64Decode.substring(16);
 
-                const encryptKey = bot.encryptKey.padEnd(32, "\0");
-                const decipher = crypto.createDecipheriv("aes-256-cbc", encryptKey, iv);
-                const decrypt = decipher.update(encrypt, "base64", "utf8") + decipher.final("utf8");
-                return [bot, JSON.parse(decrypt)];
-            } catch (e) {
-                // bot.logger.error(e);
-                return undefined;
-            }
-        }).find(v => v != undefined);
+                    const encryptKey = bot.encryptKey.padEnd(32, "\0");
+                    const decipher = crypto.createDecipheriv(
+                        "aes-256-cbc",
+                        encryptKey,
+                        iv
+                    );
+                    const decrypt =
+                        decipher.update(encrypt, "base64", "utf8") +
+                        decipher.final("utf8");
+                    return [bot, JSON.parse(decrypt)];
+                } catch (e) {
+                    // bot.logger.error(e);
+                    return undefined;
+                }
+            })
+            .find((v) => v != undefined);
         if (ret) {
             const [bot, event] = ret;
             if (isChallengeEvent(event)) {
@@ -130,7 +141,8 @@ app.post("/", (req, res) => {
                     challenge: event.d.challenge,
                 });
             } else {
-                if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
+                if (encrypt && bot.proxyEncrypted)
+                    sendBodyToRemote(bot.remoteAddress, { encrypt });
                 else sendBodyToRemote(bot.remoteAddress, body);
             }
         }
@@ -161,12 +173,10 @@ for (const bot of bots) {
     });
 }
 
-function handleBody(
-    bot: ArrayElement<typeof bots>,
-    body: any
-) {
-    let event = body, encrypt;
-    if (encrypt = body.encrypt) {
+function handleBody(bot: ArrayElement<typeof bots>, body: any) {
+    let event = body,
+        encrypt;
+    if ((encrypt = body.encrypt)) {
         try {
             const base64Content = body.encrypt;
             const base64Decode = Buffer.from(base64Content, "base64").toString(
@@ -176,8 +186,14 @@ function handleBody(
             const encrypt = base64Decode.substring(16);
 
             const encryptKey = bot.encryptKey.padEnd(32, "\0");
-            const decipher = crypto.createDecipheriv("aes-256-cbc", encryptKey, iv);
-            const decrypt = decipher.update(encrypt, "base64", "utf8") + decipher.final("utf8");
+            const decipher = crypto.createDecipheriv(
+                "aes-256-cbc",
+                encryptKey,
+                iv
+            );
+            const decrypt =
+                decipher.update(encrypt, "base64", "utf8") +
+                decipher.final("utf8");
             event = JSON.parse(decrypt);
         } catch (e) {
             bot.logger.error(e);
@@ -188,7 +204,8 @@ function handleBody(
         if (isChallengeEvent(event)) {
             return event.d.challenge;
         } else {
-            if (encrypt && bot.proxyEncrypted) sendBodyToRemote(bot.remoteAddress, { encrypt });
+            if (encrypt && bot.proxyEncrypted)
+                sendBodyToRemote(bot.remoteAddress, { encrypt });
             else sendBodyToRemote(bot.remoteAddress, event);
             if (bot.saveEvent) saveEvent(bot, event);
             return undefined;
@@ -201,20 +218,23 @@ function handleBody(
 }
 
 function sendBodyToRemote(url: string, data: any) {
-    axios.post(url, data).catch(() => { });
+    axios.post(url, data).catch(() => {});
 }
 
 app.listen(config.port, () => {
     console.log(`Starts listening on ${config.port}`);
 });
 
-import fs from 'fs';
+import fs from "fs";
 function saveEvent(bot: ArrayElement<typeof bots>, event: any) {
     try {
         fs.mkdirSync(`./config/event/${bot.name}`, { recursive: true });
-        fs.writeFileSync(`./config/event/${bot.name}/${Date.now()}.json`, JSON.stringify(event));
+        fs.writeFileSync(
+            `./config/event/${bot.name}/${Date.now()}.json`,
+            JSON.stringify(event)
+        );
     } catch (e) {
-        bot.logger.error(`error while saving event for ${bot.name}`)
+        bot.logger.error(`error while saving event for ${bot.name}`);
         bot.logger.error(e);
     }
 }
